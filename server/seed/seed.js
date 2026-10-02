@@ -8,7 +8,7 @@ const Offering = require("../models/Offering");
 const Registration = require("../models/Registration");
 const Record = require("../models/Record");
 
-const { advisors, students } = require("./data");
+const { advisors, students,offerings } = require("./data");
 
 dotenv.config();
 
