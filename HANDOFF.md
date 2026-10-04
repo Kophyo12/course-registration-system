@@ -3,7 +3,29 @@
 Each user adds a section here when they finish, so the next user knows what exists.
 
 ## User 1 - Foundation and database
-(User 1: please add your notes here, e.g. what the seed creates and how to run it.)
+User 1 Handoff
+
+User 1 completed the project foundation and database setup.
+
+Completed:
+
+MERN project structure
+
+Express server and MongoDB connection
+
+Core models: User, Course, Offering, Registration, Record
+
+Seed script and dataset setup
+
+25 students, 4 advisors, 1 admin
+
+55 courses, offerings, records, and registrations
+
+Password hashing with bcrypt
+
+Environment configuration and basic API health route
+
+The database and seed process are working and ready for the next member.
 
 ## User 2 - Authentication and Admin (done)
 
