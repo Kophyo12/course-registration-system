@@ -42,5 +42,7 @@ async function login(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
-
-module.exports = { login };
+async function me(req, res) {
+  res.json({ user: req.user });
+}
+module.exports = { login, me };
