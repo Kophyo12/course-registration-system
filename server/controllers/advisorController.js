@@ -4,6 +4,11 @@ const Course = require("../models/Course");
 const User = require("../models/User");
 const Record = require("../models/Record");
 const Registration = require("../models/Registration");
+const {
+  evaluateEligibility,
+  eligibleOfferingResult,
+  sortEligibleOfferings,
+} = require("../services/eligibility");
 
 // Shared helpers
 function fail(status, message) {
@@ -78,6 +83,14 @@ function termFilter(query) {
   return { term: query.term.trim() };
 }
 
+function requiredTerm(term) {
+  if (typeof term !== "string" || !term.trim()) {
+    fail(400, "Term is required");
+  }
+
+  return term.trim();
+}
+
 async function findStudent(id, session = null) {
   checkId(id);
 
@@ -92,6 +105,40 @@ async function findStudent(id, session = null) {
   if (!student) fail(404, "Student not found");
 
   return student;
+}
+
+async function eligibilityContext(studentId, term, session = null) {
+  const records = await Record.find({ studentId })
+    .select("courseId grade term")
+    .session(session)
+    .lean();
+
+  const registrations = await Registration.find({
+    studentId,
+    term,
+    status: "registered",
+  })
+    .populate({
+      path: "offeringId",
+      populate: { path: "courseId", select: "code title credits" },
+    })
+    .session(session)
+    .lean();
+
+  return { term, records, registrations };
+}
+
+async function serializeStudentRegistrations(studentId, session, activeOnly = true) {
+  // A shared student write makes concurrent registrations to different
+  // sections conflict and retry before reading schedules. This prevents
+  // transaction write skew without adding a lock collection or model fields.
+  const result = await User.updateOne(
+    { _id: studentId, role: "student", ...(activeOnly ? { active: true } : {}) },
+    { $inc: { __v: 1 } },
+    { session }
+  );
+
+  if (result.matchedCount !== 1) fail(404, "Student not found");
 }
 
 function positiveInteger(value, label) {
@@ -366,23 +413,47 @@ async function getStudentRegistrations(req, res) {
   }
 }
 
-// Basic registration — User 4 adds eligibility rules here.
+async function getEligibleCourses(req, res) {
+  try {
+    const term = requiredTerm(req.query.term);
+    await findStudent(req.params.studentId);
+
+    const context = await eligibilityContext(req.params.studentId, term);
+    const offerings = await Offering.find({ term })
+      .populate("courseId", "code title credits")
+      .lean();
+
+    res.json(sortEligibleOfferings(offerings.map((offering) => eligibleOfferingResult(offering, context))));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+// Recheck eligibility inside the transaction; previews can become stale.
 async function registerStudent(req, res) {
   try {
-    const { studentId, offeringId } = req.body || {};
+    const { studentId, offeringId, term: requestedTerm } = req.body || {};
 
     checkId(studentId);
     checkId(offeringId);
+    const term = requiredTerm(requestedTerm);
 
     const registration = await transaction(
       async (session) => {
-        await findStudent(studentId, session);
+        await serializeStudentRegistrations(studentId, session);
 
         const offering = await Offering.findById(
           offeringId
-        ).session(session);
+        )
+          .populate("courseId", "code title credits")
+          .session(session);
 
         if (!offering) fail(404, "Offering not found");
+
+        const context = await eligibilityContext(studentId, term, session);
+        const eligibility = evaluateEligibility(offering, context);
+
+        if (!eligibility.eligible) fail(409, eligibility.reason);
 
         const existing = await Registration.findOne({
           studentId,
@@ -392,9 +463,6 @@ async function registerStudent(req, res) {
         if (existing?.status === "registered") {
           fail(409, "Student is already registered");
         }
-
-        // User 4: add academic, term, full-section and
-        // time-clash checks here before either write.
 
         let saved;
 
@@ -415,13 +483,17 @@ async function registerStudent(req, res) {
         }
 
         const result = await Offering.updateOne(
-          { _id: offeringId },
+          {
+            _id: offeringId,
+            term,
+            $expr: { $lt: ["$seatsTaken", "$seats"] },
+          },
           { $inc: { seatsTaken: 1 } },
           { session }
         );
 
         if (result.modifiedCount !== 1) {
-          fail(409, "Offering changed; please retry");
+          fail(409, "Section is full or offering changed; please refresh and retry");
         }
 
         return saved;
@@ -439,6 +511,14 @@ async function removeRegistration(req, res) {
     checkId(req.params.id);
 
     await transaction(async (session) => {
+      const owner = await Registration.findById(req.params.id)
+        .select("studentId")
+        .session(session);
+
+      if (!owner) fail(404, "Registration not found");
+
+      await serializeStudentRegistrations(owner.studentId, session, false);
+
       const registration =
         await Registration.findById(
           req.params.id
@@ -522,6 +602,7 @@ module.exports = {
   getStudents,
   getStudentRecords,
   getStudentRegistrations,
+  getEligibleCourses,
   registerStudent,
   removeRegistration,
   setAddDrop,

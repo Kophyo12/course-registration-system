@@ -29,6 +29,11 @@ router.get(
   advisor.getStudentRegistrations
 );
 
+router.get(
+  "/students/:studentId/eligible-courses",
+  advisor.getEligibleCourses
+);
+
 router.post("/registrations", advisor.registerStudent);
 
 router.delete(
