@@ -283,3 +283,74 @@ cases. Never point it at shared Atlas data or use the team's `MONGO_URI`.
 - AI assisted the User 4 implementation and automated verification. Include
   this assistance in the group report and review the evaluator, API transaction
   and UI flow before explaining this part at the presentation.
+
+## User 5 - Student dashboard and final integration (done)
+
+Branch: `feature/user5-student`.
+
+### Tested first (9 October 2026)
+- Server tests: 18/18 passed. Client lint (0 errors) and build passed.
+- Login for admin, advisor and student; wrong password rejected (401).
+- Admin routes return 403 for advisors; advisor routes return 403 for
+  students; no token returns 401.
+- Advisor offerings, courses, students, records, registrations and
+  eligibility load. Blocked registration returns 409, missing term 400.
+- Admin and Advisor dashboards load in the browser.
+
+### Backend: current-student API
+`server/controllers/studentController.js`, `server/routes/studentRoutes.js`,
+mounted in `server/server.js` as `/api/student`. All routes need a logged-in
+student and always use `req.user`, so a student only sees their own data.
+
+- `GET /api/student/registrations` - current registered courses with code,
+  title, section, day, start/end time, room and instructor.
+- `GET /api/student/records` - `{ terms: [{ term, records: [...] }], summary }`.
+  Terms newest first. Each record has `grade` and `retakeRequired`
+  (F and not passed in another term). `summary` has `gpa`, `gpaCredits`,
+  `creditsEarned`.
+- `GET /api/student/add-drop` - current term (latest term with offerings),
+  `open`, `deadline`, advisor `name/email/active`, `emailSubject`, `formUrl`.
+
+GPA rules: A=4, B+=3.5, B=3, C+=2.5, C=2, D+=1.5, D=1, F=0, weighted by
+credits. W is not counted. Every graded attempt counts. Credits earned count
+each passed course once. Terms like `3/2023` are sorted by year then semester.
+
+### Frontend
+- `client/src/pages/StudentDashboard.jsx` replaces the `/student` placeholder
+  (placeholder removed from `App.jsx`).
+- Shows summary (GPA, credits), current courses, Add/Drop status, academic
+  records grouped by term with "Retake required".
+- When Add/Drop is open it shows Request Add/Drop instructions, form download,
+  advisor email (with a warning if the advisor account is inactive) and the
+  required email subject.
+- `client/public/add-drop-form.pdf` - one-page Add/Drop request form.
+- `.gitattributes` marks PDFs as binary so Git never changes them.
+
+### Final integration
+- `README.md` written: setup, `.env`, seed warning, run, test accounts,
+  Add/Drop flow, API overview, tests, structure, screenshots, troubleshooting.
+- `server/.env.example` added. `.env`, `server/.env` and `server/node_modules`
+  are no longer tracked by Git (files stay on each computer); `.gitignore`
+  updated. **The old MongoDB password and JWT secret are still in Git
+  history, so change the Atlas database user's password and the JWT secret,
+  then update everyone's `server/.env`.**
+
+### Verified in the browser
+- Ayla: GPA 3.36, 21 credits, two current courses, records by term.
+- Noah Reed: ITE120 F shows "Retake required", GPA 1.83.
+- Alex: no current courses; with Add/Drop open, inactive-advisor warning shows.
+- Advisor opened Add/Drop for 1/2026, student saw Open and the request
+  section; Add/Drop was closed again afterwards.
+- Form link opens the PDF.
+
+### Known data notes (not changed)
+- All seeded 1/2026 offerings are Monday 09:00-12:00, and Ayla is registered
+  in two of them at the same time (seed data, noted by User 4).
+- Advisor `zak@gmail.com` is deactivated, so his 6 students (including
+  `alex@gmail.com`) see an inactive advisor. README uses `ayla@gmail.com`.
+- Student `phyomin@12` has an invalid email and no advisor (created in Admin).
+- The advisor email `wendylu@gamil.com` is intentional.
+
+### AI assistance
+AI (Claude) assisted with User 5 testing, the student API, the dashboard,
+the form, README and this handoff. Review the code before presenting it.
