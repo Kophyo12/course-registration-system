@@ -8,6 +8,7 @@ import {
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdvisorDashboard from "./pages/AdvisorDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
 import { getUser } from "./api";
 
 function Protected({ role, children }) {
@@ -20,15 +21,6 @@ function Protected({ role, children }) {
   }
 
   return children;
-}
-
-function Placeholder({ title }) {
-  return (
-    <div className="box">
-      <h1>{title}</h1>
-      <p>Coming soon.</p>
-    </div>
-  );
 }
 
 export default function App() {
@@ -59,7 +51,7 @@ export default function App() {
           path="/student"
           element={
             <Protected role="student">
-              <Placeholder title="Student Dashboard" />
+              <StudentDashboard />
             </Protected>
           }
         />
