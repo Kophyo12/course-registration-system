@@ -1,0 +1,2 @@
+# Never change line endings inside PDF files
+*.pdf binary
