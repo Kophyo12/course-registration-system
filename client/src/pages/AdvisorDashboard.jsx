@@ -190,6 +190,7 @@ export default function AdvisorDashboard() {
     key: "",
     records: [],
     registrations: [],
+    eligibility: [],
   });
 
   useEffect(() => {
@@ -237,13 +238,17 @@ export default function AdvisorDashboard() {
         apiFetch(
           `/advisor/students/${studentId}/registrations?term=${encodeURIComponent(term)}`
         ),
+        apiFetch(
+          `/advisor/students/${studentId}/eligible-courses?term=${encodeURIComponent(term)}`
+        ),
       ])
-        .then(([history, registrations]) => {
+        .then(([history, registrations, eligibility]) => {
           if (active) {
             setStudentData({
               key: `${studentId}:${term}:${revision}`,
               records: history.records,
               registrations,
+              eligibility,
             });
           }
         })
@@ -274,6 +279,16 @@ export default function AdvisorDashboard() {
     : [];
 
   const records = dataReady ? studentData.records : [];
+  const eligibility = dataReady ? studentData.eligibility : [];
+  const selectedOffering = eligibility.find(
+    (offering) => offering._id === offeringId
+  );
+  const canRegister =
+    dataReady &&
+    selectedOffering?.eligible === true &&
+    !busy &&
+    !loading &&
+    !studentLoading;
 
   const terms = [
     ...new Set([
@@ -356,6 +371,11 @@ export default function AdvisorDashboard() {
     } catch (err) {
       if (deletion) setDeleteError(err.message);
       else setError(err.message);
+
+      // Another advisor may have changed seats or registrations.
+      if (path === "/advisor/registrations" && method === "POST") {
+        setRevision((value) => value + 1);
+      }
     } finally {
       setBusy(false);
     }
@@ -673,48 +693,110 @@ export default function AdvisorDashboard() {
 
       {studentId && dataReady && (
         <>
+          <h3>Course eligibility — {term}</h3>
+
+          <p>
+            Failed courses are listed first. Retakes can be registered
+            when all other eligibility rules allow them.
+          </p>
+
+          {!eligibility.length ? (
+            <p>No offerings in this term.</p>
+          ) : (
+            <Table
+              headers={[
+                "Course",
+                "Section",
+                "Day",
+                "Time",
+                "Room",
+                "Seats remaining",
+                "Retake",
+                "Eligibility",
+                "Blocking reason",
+              ]}
+            >
+              {eligibility.map((offering) => (
+                <tr
+                  key={offering._id}
+                  style={
+                    offering.eligible
+                      ? undefined
+                      : { background: "#eee", color: "#555" }
+                  }
+                >
+                  <td>{courseName(offering.courseId)}</td>
+                  <td>{offering.section}</td>
+                  <td>{offering.day}</td>
+                  <td>{offering.startTime}–{offering.endTime}</td>
+                  <td>{offering.room}</td>
+                  <td>{offering.seatsRemaining}</td>
+                  <td>
+                    {offering.retakeRequired ? "Retake required" : "—"}
+                  </td>
+                  <td>{offering.eligible ? "Eligible" : "Blocked"}</td>
+                  <td>{offering.reason || "—"}</td>
+                </tr>
+              ))}
+            </Table>
+          )}
+
           <form
             onSubmit={(event) => {
               event.preventDefault();
 
+              if (!canRegister) {
+                if (!busy && !studentLoading) {
+                  setError("Select an eligible offering before registering.");
+                }
+                return;
+              }
+
               mutate(
                 "/advisor/registrations",
                 "POST",
-                { studentId, offeringId },
+                { studentId, offeringId: selectedOffering._id, term },
                 "Student registered"
               );
             }}
           >
-            <fieldset disabled={busy || !visible.length}>
+            <fieldset
+              disabled={
+                busy ||
+                loading ||
+                studentLoading ||
+                !dataReady ||
+                !eligibility.length
+              }
+            >
               <legend>Register in {term}</legend>
 
               <select
                 aria-label="Offering"
-                value={offeringId}
+                value={selectedOffering?.eligible ? offeringId : ""}
                 onChange={(event) => setOfferingId(event.target.value)}
                 required
               >
                 <option value="">Select an offering</option>
 
-                {visible.map((offering) => (
+                {eligibility.map((offering) => (
                   <option
                     key={offering._id}
                     value={offering._id}
-                    disabled={registrations.some(
-                      (registration) =>
-                        registration.offeringId?._id === offering._id
-                    )}
+                    disabled={!offering.eligible}
                   >
                     {offering.courseId?.code || "Unknown"}{" "}
                     Section {offering.section} — {offering.day}{" "}
                     {offering.startTime}–{offering.endTime} —{" "}
                     {offering.seatsRemaining} seats remaining
+                    {offering.retakeRequired ? " — Retake required" : ""}
+                    {!offering.eligible ? ` — ${offering.reason}` : ""}
                   </option>
                 ))}
               </select>
               {" "}
 
-              <button disabled={!offeringId}>
+              <button disabled={!canRegister}>
                 Register Student
               </button>
             </fieldset>
@@ -812,7 +894,10 @@ export default function AdvisorDashboard() {
                   <td>{record.term}</td>
                   <td>{courseName(record.courseId)}</td>
                   <td>{record.courseId?.credits}</td>
-                  <td>{record.grade}</td>
+                  <td>
+                    {record.grade}
+                    {record.grade === "F" ? " — Retake required" : ""}
+                  </td>
                 </tr>
               ))}
             </Table>

@@ -171,3 +171,115 @@ These credentials apply if the seeded account has not been changed.
 - MongoDB transactions require Atlas or a replica set.
 - No new dependencies were added.
 - Do not seed the shared database during ordinary testing.
+
+## User 4 - Registration eligibility (done)
+
+Implemented by `engystarlord` on `feature/user4-eligibility`.
+
+### Rules and Advisor interface
+- Selected-term offerings only.
+- Any completed passing grade (A, B+, B, C+, C, D+, D) blocks a repeat.
+- F without a passing attempt shows **Retake required** and appears first.
+- W permits another attempt. A passing attempt takes precedence over F/W.
+- Full sections, duplicate sections and alternate sections of an already
+  registered course are blocked.
+- Same-day overlapping times are blocked and identify the conflicting
+  course/section. Back-to-back classes are allowed.
+- Dropped registrations and other terms do not cause timetable conflicts.
+- Advisor sees available and greyed blocked rows, reasons and retake flags.
+  Unavailable dropdown options and the submit button are disabled.
+- Eligibility reloads after registration, removal, offering changes and
+  rejected registration attempts. Stale student/term responses are ignored.
+
+### API contract for User 5
+All routes below retain the existing authenticated-advisor restriction.
+
+`GET /api/advisor/students/:studentId/eligible-courses?term=1%2F2026`
+returns an array of selected-term offerings, including blocked offerings.
+Each offering retains its populated `courseId` and adds:
+
+```json
+{
+  "seatsRemaining": 3,
+  "eligible": true,
+  "reasons": [],
+  "reason": "",
+  "retakeRequired": true
+}
+```
+
+The array puts retakes first, then sorts by course code and section.
+`reason` joins all blocking `reasons`; it is empty when eligible.
+
+**Updated registration body:** `term` is now required. All callers must send:
+
+```json
+{
+  "studentId": "student MongoDB _id",
+  "offeringId": "offering MongoDB _id",
+  "term": "1/2026"
+}
+```
+
+Missing/malformed input returns 400, unknown/inactive student or missing
+offering returns 404, and a blocked registration returns 409 with its reason.
+The server rejects an offering from a different term, even with a direct POST.
+Closed Add/Drop continues to close student requests only; an advisor may
+still manage registration manually if all eligibility rules pass.
+
+### Important code
+- `server/services/eligibility.js` holds the shared rule evaluator used by
+  both eligibility preview and registration POST.
+- `server/controllers/advisorController.js` loads history and active
+  registrations and rechecks rules inside the existing transaction.
+- A conditional offering update prevents exceeding capacity. Updating the
+  student's existing `__v` inside registration/removal transactions makes
+  simultaneous changes to one student's schedule retry safely, including
+  requests for different offerings. No models or collections were added.
+- `client/src/pages/AdvisorDashboard.jsx` displays server results; it does
+  not maintain a separate frontend rules engine.
+
+### Verification on 9 October 2026
+- **33 tests passed:** 18 evaluator tests and 15 real API tests on a disposable
+  local MongoDB replica set with real transactions.
+- API checks included advisor login, Admin access protection, every passing
+  grade, F/W, repeated attempts, selected term, duplicates, overlapping and
+  adjacent times, full sections, missing courses, drop/re-register counts,
+  competing requests for the final seat, conflicting concurrent registrations
+  for one student and concurrent alternate sections of one course.
+- Existing offering editing and Add/Drop open/close were checked.
+- Client production build passed with dependencies from package-lock.json.
+- Client lint passed with no errors; existing Admin and Advisor effect warnings
+  remain. The existing offering update also emits a Mongoose deprecation warning.
+- Browser check on local demo data confirmed advisor login, grey blocked rows,
+  disabled choices, retake-first order and registration/removal with refreshed
+  eligibility and seat counts.
+- Shared Atlas data was not seeded or modified by these tests.
+
+Run evaluator tests from `server/` with `npm test`. Integration tests skip
+unless `TEST_MONGO_URI` is explicitly set to a LOCAL disposable replica-set
+database named `user4_test_*`. For PowerShell, for example:
+
+```powershell
+$env:TEST_MONGO_URI = 'mongodb://127.0.0.1:27017/user4_test_rules?replicaSet=rs0'
+npm test
+```
+
+The integration suite clears that test database's project collections between
+cases. Never point it at shared Atlas data or use the team's `MONGO_URI`.
+
+### Remaining work for User 5
+- Student dashboard, Add/Drop form/process, GPA/credits, README/screenshots,
+  final integration and the group's remaining submission documents.
+- Existing seed imports special `offerings` but does not use that import;
+  it creates IP-based offerings with Monday 09:00-12:00 schedules. Check demo
+  coverage and overlapping starter registrations when finalizing seed data.
+- Existing offering editing can reschedule an already registered section
+  into a clash; registration rules validate new registrations. Review this
+  behavior during final integration if schedule editing will be demonstrated.
+- Existing tracked `.env` and `node_modules` are still an upstream cleanup
+  issue documented by User 2. Remove secrets from tracking and rotate exposed
+  values before final submission; this change adds no credentials.
+- AI assisted the User 4 implementation and automated verification. Include
+  this assistance in the group report and review the evaluator, API transaction
+  and UI flow before explaining this part at the presentation.
