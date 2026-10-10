@@ -34,12 +34,6 @@ const days = [
   "Sunday",
 ];
 
-const actionStyle = {
-  display: "flex",
-  gap: "8px",
-  alignItems: "center",
-  whiteSpace: "nowrap",
-};
 
 function courseName(course) {
   return course

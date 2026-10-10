@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, getUser, clearSession } from "../api";
 
-const tableStyle = { borderCollapse: "collapse", width: "100%" };
 
 function StudentDashboard() {
   const me = getUser();
