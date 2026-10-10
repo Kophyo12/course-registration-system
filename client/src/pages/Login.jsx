@@ -11,38 +11,73 @@ function Login() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
     try {
       const data = await apiFetch("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+
       saveSession(data.token, data.user);
-      navigate(`/${data.user.role}`); // /admin, /advisor or /student
+      navigate(`/${data.user.role}`);
     } catch (err) {
       setError(err.message);
     }
   }
 
   return (
-    <div className="box">
-      <h1>Course Registration System</h1>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <p>
-          <label>Email<br />
-            <input type="email" value={email}
-              onChange={(e) => setEmail(e.target.value)} required />
-          </label>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-logo">CR</div>
+
+          <div>
+            <h1>Course Registration System</h1>
+            <p>University Academic Portal</p>
+          </div>
+        </div>
+
+        <div className="login-content">
+          <h2>Welcome back</h2>
+          <p className="muted">
+            Sign in to access your course registration account.
+          </p>
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={email}
+                placeholder="Enter your email"
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                placeholder="Enter your password"
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {error && <p className="error">{error}</p>}
+
+            <button className="login-button" type="submit">
+              Sign In
+            </button>
+          </form>
+        </div>
+
+        <p className="login-footer">
+          Course Registration System · CSC220
         </p>
-        <p>
-          <label>Password<br />
-            <input type="password" value={password}
-              onChange={(e) => setPassword(e.target.value)} required />
-          </label>
-        </p>
-        {error && <p className="error">{error}</p>}
-        <button type="submit">Login</button>
-      </form>
+      </div>
     </div>
   );
 }

@@ -129,110 +129,212 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="box">
-      <h1>Admin Dashboard</h1>
-      <p>
-        Logged in as {me.name} ({me.role}){" "}
-        <button onClick={handleLogout}>Logout</button>
-      </p>
-
-      {message && <p style={{ color: "green" }}>{message}</p>}
-      {error && <p className="error">{error}</p>}
-
-      <h2>{editingId ? "Edit user" : "Create user"}</h2>
-      <form onSubmit={handleSubmit}>
+  <div className="dashboard-page">
+    <div className="dashboard-header">
+      <div>
+        <h1>Admin Dashboard</h1>
         <p>
-          <label>Name<br />
-            <input name="name" value={form.name} onChange={handleChange} required />
-          </label>
+          Logged in as <strong>{me.name}</strong> ({me.role})
         </p>
-        <p>
-          <label>Email<br />
-            <input name="email" type="email" value={form.email} onChange={handleChange} required />
-          </label>
-        </p>
-        <p>
-          <label>
-            {editingId ? "New password (leave blank to keep the old one)" : "Password"}
-            <br />
-            <input name="password" type="password" value={form.password}
-              onChange={handleChange} required={!editingId} />
-          </label>
-        </p>
-        <p>
-          <label>Role<br />
-            <select name="role" value={form.role} onChange={handleChange}>
-              <option value="admin">admin</option>
-              <option value="advisor">advisor</option>
-              <option value="student">student</option>
-            </select>
-          </label>
-        </p>
-        {form.role === "student" && (
-          <p>
-            <label>Student ID<br />
-              <input name="studentId" value={form.studentId} onChange={handleChange} required />
-            </label>
-          </p>
-        )}
-        {editingId && (
-          <p>
-            <label>
-              <input name="active" type="checkbox" checked={form.active} onChange={handleChange} />
-              {" "}Active
-            </label>
-          </p>
-        )}
-        <button type="submit">{editingId ? "Save changes" : "Create user"}</button>{" "}
-        {editingId && <button type="button" onClick={cancelEdit}>Cancel</button>}
-      </form>
+      </div>
 
-      <h2>Users</h2>
-      <p>
-        <label>Filter by role:{" "}
-          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-            <option value="">All</option>
-            <option value="admin">admin</option>
-            <option value="advisor">advisor</option>
-            <option value="student">student</option>
-          </select>
-        </label>
-        {" "}({users.length} users)
-      </p>
-
-      <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Student ID</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user._id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>{user.role}</td>
-              <td>{user.studentId || "-"}</td>
-              <td>{user.active ? "Active" : "Inactive"}</td>
-              <td>
-                <button onClick={() => startEdit(user)}>Edit</button>{" "}
-                {user.active ? (
-                  <button onClick={() => handleDelete(user)}>Deactivate</button>
-                ) : (
-                  <button onClick={() => handleReactivate(user)}>Reactivate</button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <button className="secondary-button" onClick={handleLogout}>
+        Logout
+      </button>
     </div>
-  );
-}
+
+    {message && <p className="success-message">{message}</p>}
+    {error && <p className="error">{error}</p>}
+
+    <div className="admin-grid">
+      <div className="panel">
+        <h2>{editingId ? "Edit User" : "Create User"}</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Name</label>
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>
+              {editingId
+                ? "New password (leave blank to keep old one)"
+                : "Password"}
+            </label>
+
+            <input
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={handleChange}
+              required={!editingId}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Role</label>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+            >
+              <option value="admin">Admin</option>
+              <option value="advisor">Advisor</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+
+          {form.role === "student" && (
+            <div className="form-group">
+              <label>Student ID</label>
+              <input
+                name="studentId"
+                value={form.studentId}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          )}
+
+          {editingId && (
+            <div className="checkbox-row">
+              <input
+                name="active"
+                type="checkbox"
+                checked={form.active}
+                onChange={handleChange}
+              />
+              <label>Active account</label>
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button type="submit">
+              {editingId ? "Save Changes" : "Create User"}
+            </button>
+
+            {editingId && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={cancelEdit}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="panel users-panel">
+        <div className="panel-header">
+          <div>
+            <h2>Users</h2>
+            <p>{users.length} users found</p>
+          </div>
+
+          <select
+            className="role-filter"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          >
+            <option value="">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="advisor">Advisor</option>
+            <option value="student">Student</option>
+          </select>
+        </div>
+
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Student ID</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {users.map((user) => (
+                <tr key={user._id}>
+                  <td>{user.name}</td>
+                  <td>{user.email}</td>
+
+                  <td>
+                    <span className="role-badge">
+                      {user.role}
+                    </span>
+                  </td>
+
+                  <td>{user.studentId || "-"}</td>
+
+                  <td>
+                    <span
+                      className={
+                        user.active
+                          ? "status-badge active"
+                          : "status-badge inactive"
+                      }
+                    >
+                      {user.active ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        className="small-button"
+                        onClick={() => startEdit(user)}
+                      >
+                        Edit
+                      </button>
+
+                      {user.active ? (
+                        <button
+                          className="danger-button small-button"
+                          onClick={() => handleDelete(user)}
+                        >
+                          Deactivate
+                        </button>
+                      ) : (
+                        <button
+                          className="success-button small-button"
+                          onClick={() => handleReactivate(user)}
+                        >
+                          Reactivate
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+);}
 
 export default AdminDashboard;

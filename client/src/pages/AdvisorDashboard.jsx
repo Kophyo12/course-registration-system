@@ -49,12 +49,8 @@ function courseName(course) {
 
 function Table({ headers, children }) {
   return (
-    <div style={{ overflowX: "auto", marginBottom: 16 }}>
-      <table
-        border="1"
-        cellPadding="6"
-        style={{ borderCollapse: "collapse", width: "100%" }}
-      >
+    <div className="table-wrapper">
+      <table>
         <thead>
           <tr>
             {headers.map((header) => (
@@ -68,8 +64,13 @@ function Table({ headers, children }) {
   );
 }
 
-// Native dialog provides keyboard focus handling and a backdrop.
-function DeleteDialog({ offering, busy, error, onCancel, onConfirm }) {
+function DeleteDialog({
+  offering,
+  busy,
+  error,
+  onCancel,
+  onConfirm,
+}) {
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -84,24 +85,15 @@ function DeleteDialog({ offering, busy, error, onCancel, onConfirm }) {
   return (
     <dialog
       ref={dialogRef}
+      className="delete-dialog"
       aria-labelledby="delete-title"
       aria-describedby="delete-description"
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();
       }}
-      style={{
-        border: "none",
-        borderRadius: "8px",
-        padding: "24px",
-        width: "min(420px, calc(100vw - 48px))",
-        boxSizing: "border-box",
-        background: "white",
-        color: "#222",
-        boxShadow: "0 8px 30px rgba(0, 0, 0, 0.25)",
-      }}
     >
-      <h2 id="delete-title" style={{ marginTop: 0 }}>
+      <h2 id="delete-title">
         Delete Offering?
       </h2>
 
@@ -114,7 +106,7 @@ function DeleteDialog({ offering, busy, error, onCancel, onConfirm }) {
         Section {offering.section} · Term {offering.term}
       </p>
 
-      <p>
+      <p className="muted">
         This cannot be undone. Offerings with registration
         history cannot be deleted.
       </p>
@@ -125,15 +117,10 @@ function DeleteDialog({ offering, busy, error, onCancel, onConfirm }) {
         </p>
       )}
 
-      <div
-        style={{
-          ...actionStyle,
-          justifyContent: "flex-end",
-          marginTop: "20px",
-        }}
-      >
+      <div className="dialog-actions">
         <button
           type="button"
+          className="secondary-button"
           autoFocus
           disabled={busy}
           onClick={onCancel}
@@ -143,15 +130,9 @@ function DeleteDialog({ offering, busy, error, onCancel, onConfirm }) {
 
         <button
           type="button"
+          className="danger-button"
           disabled={busy}
           onClick={onConfirm}
-          style={{
-            background: "#b42318",
-            color: "white",
-            border: "1px solid #b42318",
-            padding: "8px 14px",
-            borderRadius: "4px",
-          }}
         >
           {busy ? "Deleting..." : "Confirm Delete"}
         </button>
@@ -235,11 +216,17 @@ export default function AdvisorDashboard() {
     if (studentId) {
       Promise.all([
         apiFetch(`/advisor/students/${studentId}/records`),
+
         apiFetch(
-          `/advisor/students/${studentId}/registrations?term=${encodeURIComponent(term)}`
+          `/advisor/students/${studentId}/registrations?term=${encodeURIComponent(
+            term
+          )}`
         ),
+
         apiFetch(
-          `/advisor/students/${studentId}/eligible-courses?term=${encodeURIComponent(term)}`
+          `/advisor/students/${studentId}/eligible-courses?term=${encodeURIComponent(
+            term
+          )}`
         ),
       ])
         .then(([history, registrations, eligibility]) => {
@@ -278,11 +265,18 @@ export default function AdvisorDashboard() {
     ? studentData.registrations
     : [];
 
-  const records = dataReady ? studentData.records : [];
-  const eligibility = dataReady ? studentData.eligibility : [];
+  const records = dataReady
+    ? studentData.records
+    : [];
+
+  const eligibility = dataReady
+    ? studentData.eligibility
+    : [];
+
   const selectedOffering = eligibility.find(
     (offering) => offering._id === offeringId
   );
+
   const canRegister =
     dataReady &&
     selectedOffering?.eligible === true &&
@@ -312,7 +306,11 @@ export default function AdvisorDashboard() {
 
   function changeField(event) {
     const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   }
 
   function editOffering(offering) {
@@ -330,6 +328,11 @@ export default function AdvisorDashboard() {
       room: offering.room,
       instructor: offering.instructor,
       seats: String(offering.seats),
+    });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
     });
   }
 
@@ -354,26 +357,37 @@ export default function AdvisorDashboard() {
     try {
       await apiFetch(path, {
         method,
-        ...(body ? { body: JSON.stringify(body) } : {}),
+        ...(body
+          ? { body: JSON.stringify(body) }
+          : {}),
       });
 
       after?.();
+
       setMessage(success);
+
       setRevision((value) => value + 1);
 
       try {
-        setOfferings(await apiFetch("/advisor/offerings"));
+        setOfferings(
+          await apiFetch("/advisor/offerings")
+        );
       } catch {
         setError(
           "Change saved, but refresh failed. Reload the page before continuing."
         );
       }
     } catch (err) {
-      if (deletion) setDeleteError(err.message);
-      else setError(err.message);
+      if (deletion) {
+        setDeleteError(err.message);
+      } else {
+        setError(err.message);
+      }
 
-      // Another advisor may have changed seats or registrations.
-      if (path === "/advisor/registrations" && method === "POST") {
+      if (
+        path === "/advisor/registrations" &&
+        method === "POST"
+      ) {
         setRevision((value) => value + 1);
       }
     } finally {
@@ -401,7 +415,9 @@ export default function AdvisorDashboard() {
         : "/advisor/offerings",
       editingId ? "PATCH" : "POST",
       body,
-      editingId ? "Offering updated" : "Offering created",
+      editingId
+        ? "Offering updated"
+        : "Offering created",
       resetForm
     );
   }
@@ -415,17 +431,23 @@ export default function AdvisorDashboard() {
       null,
       "Offering deleted",
       () => {
-        if (editingId === id) resetForm();
+        if (editingId === id) {
+          resetForm();
+        }
+
         cancelDelete();
       },
       true
     );
   }
 
-  return (
-    <div className="box">
-      <h1>Advisor Dashboard</h1>
+  function handleLogout() {
+    clearSession();
+    navigate("/");
+  }
 
+  return (
+    <div className="dashboard-page">
       {deleteTarget && (
         <DeleteDialog
           offering={deleteTarget}
@@ -436,46 +458,78 @@ export default function AdvisorDashboard() {
         />
       )}
 
-      <p>
-        Logged in as {user?.name}{" "}
+      <div className="dashboard-header">
+        <div>
+          <h1>Advisor Dashboard</h1>
+
+          <p>
+            Logged in as{" "}
+            <strong>{user?.name}</strong>
+            {user?.role ? ` · ${user.role}` : ""}
+          </p>
+        </div>
+
         <button
+          className="secondary-button"
           disabled={busy}
-          onClick={() => {
-            clearSession();
-            navigate("/");
-          }}
+          onClick={handleLogout}
         >
           Logout
         </button>
-      </p>
+      </div>
 
       {error && (
-        <p className="error" role="alert">{error}</p>
+        <p className="error" role="alert">
+          {error}
+        </p>
       )}
 
       {message && (
-        <p style={{ color: "green" }} role="status">
+        <p className="success-message" role="status">
           {message}
         </p>
       )}
 
-      {loading && <p>Loading dashboard...</p>}
-
-      <h2>
-        {editingId ? "Edit Offering" : "Create Offering"}
-      </h2>
-
-      {editingId && (
-        <p>Course, term, and section stay fixed.</p>
+      {loading && (
+        <div className="panel">
+          <p>Loading dashboard...</p>
+        </div>
       )}
 
-      <form onSubmit={saveOffering}>
-        <fieldset disabled={busy || loading}>
-          <legend>Section details</legend>
+      <div className="panel advisor-section">
+        <div className="section-heading">
+          <div>
+            <h2>
+              {editingId
+                ? "Edit Offering"
+                : "Create Offering"}
+            </h2>
 
-          <p>
-            <label>
-              Course<br />
+            <p>
+              {editingId
+                ? "Update the schedule and section details."
+                : "Create a course section for students to register."}
+            </p>
+          </div>
+        </div>
+
+        {editingId && (
+          <div className="info-box">
+            Course, term and section stay fixed while
+            editing.
+          </div>
+        )}
+
+        <form onSubmit={saveOffering}>
+          <fieldset
+            className="offering-form-grid"
+            disabled={busy || loading}
+          >
+            <legend>Section details</legend>
+
+            <div className="form-group">
+              <label>Course</label>
+
               <select
                 name="courseId"
                 value={form.courseId}
@@ -483,427 +537,837 @@ export default function AdvisorDashboard() {
                 disabled={Boolean(editingId)}
                 required
               >
-                <option value="">Select a course</option>
+                <option value="">
+                  Select a course
+                </option>
+
                 {courses.map((course) => (
-                  <option key={course._id} value={course._id}>
+                  <option
+                    key={course._id}
+                    value={course._id}
+                  >
                     {courseName(course)}
                   </option>
                 ))}
               </select>
-            </label>
-          </p>
+            </div>
 
-          {fields.map(([name, label, type]) => (
-            <p key={name}>
-              <label>
-                {label}<br />
+            {fields.map(([name, label, type]) => (
+              <div
+                className="form-group"
+                key={name}
+              >
+                <label>{label}</label>
+
                 <input
                   name={name}
                   type={type}
                   value={form[name]}
                   onChange={changeField}
-                  min={type === "number" ? 1 : undefined}
-                  step={type === "number" ? 1 : undefined}
+                  min={
+                    type === "number"
+                      ? 1
+                      : undefined
+                  }
+                  step={
+                    type === "number"
+                      ? 1
+                      : undefined
+                  }
                   disabled={
                     Boolean(editingId) &&
-                    ["term", "section"].includes(name)
+                    ["term", "section"].includes(
+                      name
+                    )
                   }
                   required
                 />
-              </label>
-            </p>
-          ))}
+              </div>
+            ))}
 
-          <p>
-            <label>
-              Day<br />
+            <div className="form-group">
+              <label>Day</label>
+
               <select
                 name="day"
                 value={form.day}
                 onChange={changeField}
               >
                 {days.map((day) => (
-                  <option key={day}>{day}</option>
-                ))}
-              </select>
-            </label>
-          </p>
-
-          <div style={actionStyle}>
-            <button
-              disabled={!editingId && !courses.length}
-            >
-              {busy
-                ? "Saving..."
-                : editingId
-                  ? "Save Changes"
-                  : "Create Offering"}
-            </button>
-
-            {editingId && (
-              <button type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            )}
-          </div>
-        </fieldset>
-      </form>
-
-      <h2>Offerings and Add/Drop</h2>
-
-      <p>
-        <label>
-          Term:{" "}
-          <select
-            value={term}
-            disabled={busy || loading}
-            onChange={(event) => setTerm(event.target.value)}
-          >
-            {terms.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-      </p>
-
-      <div style={{ ...actionStyle, marginBottom: 16 }}>
-        <span>
-          Add/Drop: <strong>{addDropStatus}</strong>
-        </span>
-
-        <button
-          disabled={busy || loading || !visible.length}
-          onClick={() =>
-            mutate(
-              "/advisor/add-drop",
-              "PATCH",
-              { term, open: true },
-              "Add/Drop opened"
-            )
-          }
-        >
-          Open
-        </button>
-
-        <button
-          disabled={busy || loading || !visible.length}
-          onClick={() =>
-            mutate(
-              "/advisor/add-drop",
-              "PATCH",
-              { term, open: false },
-              "Add/Drop closed"
-            )
-          }
-        >
-          Close
-        </button>
-      </div>
-
-      {!loading && !visible.length && (
-        <p>No offerings in this term.</p>
-      )}
-
-      <Table
-        headers={[
-          "Course",
-          "Section",
-          "Day",
-          "Time",
-          "Room",
-          "Instructor",
-          "Seats",
-          "Taken",
-          "Remaining",
-          "Add/Drop",
-          "Actions",
-        ]}
-      >
-        {visible.map((offering) => (
-          <tr key={offering._id}>
-            <td>{courseName(offering.courseId)}</td>
-            <td>{offering.section}</td>
-            <td>{offering.day}</td>
-            <td>{offering.startTime}–{offering.endTime}</td>
-            <td>{offering.room}</td>
-            <td>{offering.instructor}</td>
-            <td>{offering.seats}</td>
-            <td>{offering.seatsTaken}</td>
-            <td>{offering.seatsRemaining}</td>
-            <td>
-              {offering.addDropOpen ? "Open" : "Closed"}
-            </td>
-
-            <td>
-              <div style={actionStyle}>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => editOffering(offering)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    setDeleteTarget(offering);
-                    setDeleteError("");
-                    setMessage("");
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </Table>
-
-      <h2>Student Registration</h2>
-
-      <p>
-        <label>
-          Student:{" "}
-          <select
-            value={studentId}
-            disabled={busy || loading}
-            onChange={(event) => setStudentId(event.target.value)}
-          >
-            <option value="">Select a student</option>
-            {students.map((student) => (
-              <option key={student._id} value={student._id}>
-                {student.studentId} — {student.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </p>
-
-      {studentError && (
-        <p className="error" role="alert">
-          {studentError}
-        </p>
-      )}
-
-      {studentLoading && (
-        <p>Loading student information...</p>
-      )}
-
-      {studentId && dataReady && (
-        <>
-          <h3>Course eligibility — {term}</h3>
-
-          <p>
-            Failed courses are listed first. Retakes can be registered
-            when all other eligibility rules allow them.
-          </p>
-
-          {!eligibility.length ? (
-            <p>No offerings in this term.</p>
-          ) : (
-            <Table
-              headers={[
-                "Course",
-                "Section",
-                "Day",
-                "Time",
-                "Room",
-                "Seats remaining",
-                "Retake",
-                "Eligibility",
-                "Blocking reason",
-              ]}
-            >
-              {eligibility.map((offering) => (
-                <tr
-                  key={offering._id}
-                  style={
-                    offering.eligible
-                      ? undefined
-                      : { background: "#eee", color: "#555" }
-                  }
-                >
-                  <td>{courseName(offering.courseId)}</td>
-                  <td>{offering.section}</td>
-                  <td>{offering.day}</td>
-                  <td>{offering.startTime}–{offering.endTime}</td>
-                  <td>{offering.room}</td>
-                  <td>{offering.seatsRemaining}</td>
-                  <td>
-                    {offering.retakeRequired ? "Retake required" : "—"}
-                  </td>
-                  <td>{offering.eligible ? "Eligible" : "Blocked"}</td>
-                  <td>{offering.reason || "—"}</td>
-                </tr>
-              ))}
-            </Table>
-          )}
-
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-
-              if (!canRegister) {
-                if (!busy && !studentLoading) {
-                  setError("Select an eligible offering before registering.");
-                }
-                return;
-              }
-
-              mutate(
-                "/advisor/registrations",
-                "POST",
-                { studentId, offeringId: selectedOffering._id, term },
-                "Student registered"
-              );
-            }}
-          >
-            <fieldset
-              disabled={
-                busy ||
-                loading ||
-                studentLoading ||
-                !dataReady ||
-                !eligibility.length
-              }
-            >
-              <legend>Register in {term}</legend>
-
-              <select
-                aria-label="Offering"
-                value={selectedOffering?.eligible ? offeringId : ""}
-                onChange={(event) => setOfferingId(event.target.value)}
-                required
-              >
-                <option value="">Select an offering</option>
-
-                {eligibility.map((offering) => (
-                  <option
-                    key={offering._id}
-                    value={offering._id}
-                    disabled={!offering.eligible}
-                  >
-                    {offering.courseId?.code || "Unknown"}{" "}
-                    Section {offering.section} — {offering.day}{" "}
-                    {offering.startTime}–{offering.endTime} —{" "}
-                    {offering.seatsRemaining} seats remaining
-                    {offering.retakeRequired ? " — Retake required" : ""}
-                    {!offering.eligible ? ` — ${offering.reason}` : ""}
+                  <option key={day}>
+                    {day}
                   </option>
                 ))}
               </select>
-              {" "}
+            </div>
 
-              <button disabled={!canRegister}>
-                Register Student
+            <div className="form-actions full-width">
+              <button
+                disabled={
+                  !editingId &&
+                  !courses.length
+                }
+              >
+                {busy
+                  ? "Saving..."
+                  : editingId
+                    ? "Save Changes"
+                    : "Create Offering"}
               </button>
-            </fieldset>
-          </form>
 
-          <h3>Current registrations — {term}</h3>
+              {editingId && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </fieldset>
+        </form>
+      </div>
 
-          {!registrations.length ? (
-            <p>No current registrations in this term.</p>
-          ) : (
-            <Table
-              headers={[
-                "Course",
-                "Section",
-                "Day",
-                "Time",
-                "Room",
-                "Instructor",
-                "Action",
-              ]}
+      <div className="panel advisor-section">
+        <div className="section-heading">
+          <div>
+            <h2>
+              Offerings & Add / Drop
+            </h2>
+
+            <p>
+              Manage course sections and registration
+              availability.
+            </p>
+          </div>
+
+          <span
+            className={
+              addDropStatus === "Open"
+                ? "status-badge active"
+                : addDropStatus === "Closed"
+                  ? "status-badge inactive"
+                  : "status-badge warning"
+            }
+          >
+            {addDropStatus}
+          </span>
+        </div>
+
+        <div className="advisor-toolbar">
+          <label>
+            Term
+            <select
+              value={term}
+              disabled={busy || loading}
+              onChange={(event) =>
+                setTerm(event.target.value)
+              }
             >
-              {registrations.map((registration) => {
-                const offering = registration.offeringId;
-
-                return (
-                  <tr key={registration._id}>
-                    <td>{courseName(offering?.courseId)}</td>
-                    <td>{offering?.section}</td>
-                    <td>{offering?.day}</td>
-                    <td>
-                      {offering?.startTime}–{offering?.endTime}
-                    </td>
-                    <td>{offering?.room}</td>
-                    <td>{offering?.instructor}</td>
-
-                    <td>
-                      {dropId === registration._id ? (
-                        <>
-                          <p>Remove registration?</p>
-
-                          <div style={actionStyle}>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                mutate(
-                                  `/advisor/registrations/${registration._id}`,
-                                  "DELETE",
-                                  null,
-                                  "Registration removed",
-                                  () => setDropId(null)
-                                )
-                              }
-                            >
-                              Confirm Remove
-                            </button>
-
-                            <button
-                              disabled={busy}
-                              onClick={() => setDropId(null)}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-
-                          {error && (
-                            <p className="error">{error}</p>
-                          )}
-                        </>
-                      ) : (
-                        <button
-                          disabled={busy}
-                          onClick={() => {
-                            setDropId(registration._id);
-                            setError("");
-                          }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </Table>
-          )}
-
-          <h3>Academic records — all terms</h3>
-
-          {!records.length ? (
-            <p>No academic records.</p>
-          ) : (
-            <Table headers={["Term", "Course", "Credits", "Grade"]}>
-              {records.map((record) => (
-                <tr key={record._id}>
-                  <td>{record.term}</td>
-                  <td>{courseName(record.courseId)}</td>
-                  <td>{record.courseId?.credits}</td>
-                  <td>
-                    {record.grade}
-                    {record.grade === "F" ? " — Retake required" : ""}
-                  </td>
-                </tr>
+              {terms.map((item) => (
+                <option key={item}>
+                  {item}
+                </option>
               ))}
-            </Table>
+            </select>
+          </label>
+
+          <button
+            className="success-button"
+            disabled={
+              busy ||
+              loading ||
+              !visible.length
+            }
+            onClick={() =>
+              mutate(
+                "/advisor/add-drop",
+                "PATCH",
+                {
+                  term,
+                  open: true,
+                },
+                "Add/Drop opened"
+              )
+            }
+          >
+            Open Add/Drop
+          </button>
+
+          <button
+            className="danger-button"
+            disabled={
+              busy ||
+              loading ||
+              !visible.length
+            }
+            onClick={() =>
+              mutate(
+                "/advisor/add-drop",
+                "PATCH",
+                {
+                  term,
+                  open: false,
+                },
+                "Add/Drop closed"
+              )
+            }
+          >
+            Close Add/Drop
+          </button>
+        </div>
+
+        {!loading && !visible.length && (
+          <div className="empty-state">
+            No offerings in this term.
+          </div>
+        )}
+
+        {!!visible.length && (
+          <Table
+            headers={[
+              "Course",
+              "Section",
+              "Day",
+              "Time",
+              "Room",
+              "Instructor",
+              "Seats",
+              "Taken",
+              "Remaining",
+              "Add/Drop",
+              "Actions",
+            ]}
+          >
+            {visible.map((offering) => (
+              <tr key={offering._id}>
+                <td>
+                  <strong>
+                    {offering.courseId?.code}
+                  </strong>
+
+                  <div className="table-subtext">
+                    {offering.courseId?.title}
+                  </div>
+                </td>
+
+                <td>{offering.section}</td>
+
+                <td>{offering.day}</td>
+
+                <td>
+                  {offering.startTime}–
+                  {offering.endTime}
+                </td>
+
+                <td>{offering.room}</td>
+
+                <td>
+                  {offering.instructor}
+                </td>
+
+                <td>{offering.seats}</td>
+
+                <td>
+                  {offering.seatsTaken}
+                </td>
+
+                <td>
+                  {offering.seatsRemaining}
+                </td>
+
+                <td>
+                  <span
+                    className={
+                      offering.addDropOpen
+                        ? "status-badge active"
+                        : "status-badge inactive"
+                    }
+                  >
+                    {offering.addDropOpen
+                      ? "Open"
+                      : "Closed"}
+                  </span>
+                </td>
+
+                <td>
+                  <div className="table-actions">
+                    <button
+                      type="button"
+                      className="small-button"
+                      disabled={busy}
+                      onClick={() =>
+                        editOffering(offering)
+                      }
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="danger-button small-button"
+                      disabled={busy}
+                      onClick={() => {
+                        setDeleteTarget(
+                          offering
+                        );
+
+                        setDeleteError("");
+                        setMessage("");
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        )}
+      </div>
+
+      <div className="panel advisor-section">
+        <div className="section-heading">
+          <div>
+            <h2>
+              Student Registration
+            </h2>
+
+            <p>
+              Review student history, eligibility and
+              current registrations.
+            </p>
+          </div>
+        </div>
+
+        <div className="student-selector">
+          <label>
+            Student
+          </label>
+
+          <select
+            value={studentId}
+            disabled={busy || loading}
+            onChange={(event) =>
+              setStudentId(event.target.value)
+            }
+          >
+            <option value="">
+              Select a student
+            </option>
+
+            {students.map((student) => (
+              <option
+                key={student._id}
+                value={student._id}
+              >
+                {student.studentId} —{" "}
+                {student.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {studentError && (
+          <p
+            className="error"
+            role="alert"
+          >
+            {studentError}
+          </p>
+        )}
+
+        {studentLoading && (
+          <div className="info-box">
+            Loading student information...
+          </div>
+        )}
+
+        {!studentId &&
+          !studentLoading && (
+            <div className="empty-state">
+              Select a student to view
+              eligibility and registration
+              information.
+            </div>
           )}
-        </>
-      )}
+
+        {studentId && dataReady && (
+          <>
+            <div className="advisor-subsection">
+              <h3>
+                Course Eligibility · {term}
+              </h3>
+
+              <p className="muted">
+                Failed courses appear first.
+                Retakes can be registered when
+                all other rules allow them.
+              </p>
+
+              {!eligibility.length ? (
+                <div className="empty-state">
+                  No offerings in this term.
+                </div>
+              ) : (
+                <Table
+                  headers={[
+                    "Course",
+                    "Section",
+                    "Day",
+                    "Time",
+                    "Room",
+                    "Seats",
+                    "Retake",
+                    "Eligibility",
+                    "Reason",
+                  ]}
+                >
+                  {eligibility.map(
+                    (offering) => (
+                      <tr
+                        key={offering._id}
+                        className={[
+                          offering.eligible
+                            ? "eligibility-eligible"
+                            : "eligibility-blocked",
+
+                          offering.retakeRequired
+                            ? "retake-row"
+                            : "",
+                        ].join(" ")}
+                      >
+                        <td>
+                          <strong>
+                            {
+                              offering.courseId
+                                ?.code
+                            }
+                          </strong>
+
+                          <div className="table-subtext">
+                            {
+                              offering.courseId
+                                ?.title
+                            }
+                          </div>
+                        </td>
+
+                        <td>
+                          {offering.section}
+                        </td>
+
+                        <td>
+                          {offering.day}
+                        </td>
+
+                        <td>
+                          {
+                            offering.startTime
+                          }
+                          –
+                          {
+                            offering.endTime
+                          }
+                        </td>
+
+                        <td>
+                          {offering.room}
+                        </td>
+
+                        <td>
+                          {
+                            offering.seatsRemaining
+                          }
+                        </td>
+
+                        <td>
+                          {offering.retakeRequired ? (
+                            <span className="retake-badge">
+                              Retake required
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+
+                        <td>
+                          <span
+                            className={
+                              offering.eligible
+                                ? "status-badge active"
+                                : "status-badge inactive"
+                            }
+                          >
+                            {offering.eligible
+                              ? "Eligible"
+                              : "Blocked"}
+                          </span>
+                        </td>
+
+                        <td>
+                          {offering.reason ||
+                            "—"}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </Table>
+              )}
+            </div>
+
+            <div className="registration-card">
+              <h3>
+                Register Student
+              </h3>
+
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+
+                  if (!canRegister) {
+                    if (
+                      !busy &&
+                      !studentLoading
+                    ) {
+                      setError(
+                        "Select an eligible offering before registering."
+                      );
+                    }
+
+                    return;
+                  }
+
+                  mutate(
+                    "/advisor/registrations",
+                    "POST",
+                    {
+                      studentId,
+                      offeringId:
+                        selectedOffering._id,
+                      term,
+                    },
+                    "Student registered"
+                  );
+                }}
+              >
+                <fieldset
+                  disabled={
+                    busy ||
+                    loading ||
+                    studentLoading ||
+                    !dataReady ||
+                    !eligibility.length
+                  }
+                >
+                  <legend>
+                    Register in {term}
+                  </legend>
+
+                  <div className="registration-controls">
+                    <select
+                      aria-label="Offering"
+                      value={
+                        selectedOffering?.eligible
+                          ? offeringId
+                          : ""
+                      }
+                      onChange={(event) =>
+                        setOfferingId(
+                          event.target.value
+                        )
+                      }
+                      required
+                    >
+                      <option value="">
+                        Select an offering
+                      </option>
+
+                      {eligibility.map(
+                        (offering) => (
+                          <option
+                            key={
+                              offering._id
+                            }
+                            value={
+                              offering._id
+                            }
+                            disabled={
+                              !offering.eligible
+                            }
+                          >
+                            {offering.courseId
+                              ?.code ||
+                              "Unknown"}{" "}
+                            Section{" "}
+                            {
+                              offering.section
+                            }{" "}
+                            —{" "}
+                            {offering.day}{" "}
+                            {
+                              offering.startTime
+                            }
+                            –
+                            {
+                              offering.endTime
+                            }{" "}
+                            —{" "}
+                            {
+                              offering.seatsRemaining
+                            }{" "}
+                            seats remaining
+                            {offering.retakeRequired
+                              ? " — Retake required"
+                              : ""}
+                            {!offering.eligible
+                              ? ` — ${offering.reason}`
+                              : ""}
+                          </option>
+                        )
+                      )}
+                    </select>
+
+                    <button
+                      disabled={!canRegister}
+                    >
+                      Register Student
+                    </button>
+                  </div>
+                </fieldset>
+              </form>
+            </div>
+
+            <div className="advisor-subsection">
+              <h3>
+                Current Registrations · {term}
+              </h3>
+
+              {!registrations.length ? (
+                <div className="empty-state">
+                  No current registrations in
+                  this term.
+                </div>
+              ) : (
+                <Table
+                  headers={[
+                    "Course",
+                    "Section",
+                    "Day",
+                    "Time",
+                    "Room",
+                    "Instructor",
+                    "Action",
+                  ]}
+                >
+                  {registrations.map(
+                    (registration) => {
+                      const offering =
+                        registration.offeringId;
+
+                      return (
+                        <tr
+                          key={
+                            registration._id
+                          }
+                        >
+                          <td>
+                            <strong>
+                              {
+                                offering
+                                  ?.courseId
+                                  ?.code
+                              }
+                            </strong>
+
+                            <div className="table-subtext">
+                              {
+                                offering
+                                  ?.courseId
+                                  ?.title
+                              }
+                            </div>
+                          </td>
+
+                          <td>
+                            {
+                              offering?.section
+                            }
+                          </td>
+
+                          <td>
+                            {offering?.day}
+                          </td>
+
+                          <td>
+                            {
+                              offering?.startTime
+                            }
+                            –
+                            {
+                              offering?.endTime
+                            }
+                          </td>
+
+                          <td>
+                            {offering?.room}
+                          </td>
+
+                          <td>
+                            {
+                              offering?.instructor
+                            }
+                          </td>
+
+                          <td>
+                            {dropId ===
+                            registration._id ? (
+                              <div className="remove-confirmation">
+                                <span>
+                                  Remove
+                                  registration?
+                                </span>
+
+                                <div className="table-actions">
+                                  <button
+                                    className="danger-button small-button"
+                                    disabled={
+                                      busy
+                                    }
+                                    onClick={() =>
+                                      mutate(
+                                        `/advisor/registrations/${registration._id}`,
+                                        "DELETE",
+                                        null,
+                                        "Registration removed",
+                                        () =>
+                                          setDropId(
+                                            null
+                                          )
+                                      )
+                                    }
+                                  >
+                                    Confirm
+                                  </button>
+
+                                  <button
+                                    className="secondary-button small-button"
+                                    disabled={
+                                      busy
+                                    }
+                                    onClick={() =>
+                                      setDropId(
+                                        null
+                                      )
+                                    }
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                className="danger-button small-button"
+                                disabled={
+                                  busy
+                                }
+                                onClick={() => {
+                                  setDropId(
+                                    registration._id
+                                  );
+
+                                  setError(
+                                    ""
+                                  );
+                                }}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
+                </Table>
+              )}
+            </div>
+
+            <div className="advisor-subsection">
+              <h3>
+                Academic Records · All Terms
+              </h3>
+
+              {!records.length ? (
+                <div className="empty-state">
+                  No academic records.
+                </div>
+              ) : (
+                <Table
+                  headers={[
+                    "Term",
+                    "Course",
+                    "Credits",
+                    "Grade",
+                  ]}
+                >
+                  {records.map(
+                    (record) => (
+                      <tr
+                        key={record._id}
+                      >
+                        <td>
+                          {record.term}
+                        </td>
+
+                        <td>
+                          <strong>
+                            {
+                              record.courseId
+                                ?.code
+                            }
+                          </strong>
+
+                          <div className="table-subtext">
+                            {
+                              record.courseId
+                                ?.title
+                            }
+                          </div>
+                        </td>
+
+                        <td>
+                          {
+                            record.courseId
+                              ?.credits
+                          }
+                        </td>
+
+                        <td>
+                          <span className="grade-badge">
+                            {
+                              record.grade
+                            }
+                          </span>
+
+                          {record.grade ===
+                            "F" && (
+                            <span className="retake-badge">
+                              Retake
+                              required
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </Table>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
