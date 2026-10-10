@@ -455,16 +455,17 @@ ul {
 }
 
 .small-button {
+  width: 110px;
   padding: 7px 10px;
   font-size: 13px;
+  text-align: center;
 }
-
 .table-actions {
   display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
-
 .table-wrapper {
   overflow-x: auto;
 }
