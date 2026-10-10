@@ -1,8 +1,3 @@
 node_modules/
 .DS_Store
-
-# Secrets - each person keeps their own copy
-.env
-
-# Build output
 dist/

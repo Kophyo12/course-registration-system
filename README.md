@@ -170,24 +170,6 @@ screenshots/           dashboard screenshots used below
 HANDOFF.md             notes from each team member
 ```
 
----
-
-## Screenshots
-
-### Login
-![Login](screenshots/login.png)
-
-### Admin dashboard
-![Admin dashboard](screenshots/admin.png)
-
-### Advisor dashboard
-![Advisor dashboard](screenshots/advisor.png)
-
-### Student dashboard
-![Student dashboard](screenshots/student.png)
-
----
-
 ## Troubleshooting
 
 | Problem | Fix |
