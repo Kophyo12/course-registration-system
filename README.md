@@ -2,11 +2,11 @@
 
 | No. | Name | Student ID | Role |
 |---|---|---|---|
-| 1 | Phyo Min Tun | YOUR_ID | User 1 - Database & Project Setup |
-| 2 | Member 2 Name | STUDENT_ID | User 2 - Authentication & Admin |
-| 3 | Member 3 Name | STUDENT_ID | User 3 - Advisor Features |
-| 4 | Member 4 Name | STUDENT_ID | User 4 - Eligibility Rules |
-| 5 | Member 5 Name | STUDENT_ID | User 5 - Student Dashboard & Integration |
+| 1 | Phyo Min Tun | 2403040008 | User 1 - Database & Project Setup |
+| 2 | Oggha Gwan Myint | 2310060003 | User 2 - Authentication & Admin |
+| 3 | Zin Lin Htet| 2311070007 | User 3 - Advisor Features |
+| 4 | Vladislav Ivanitskii | 2311080008 | User 4 - Eligibility Rules |
+| 5 | Vadim Bushtruk | 2311130002 | User 5 - Student Dashboard & Integration |
 
 ---
 
